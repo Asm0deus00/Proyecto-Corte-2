@@ -1,0 +1,12 @@
+/* =============================================
+   ESTILOS PERSONALIZADOS DE VIDEOTRACK
+   (NO se necesitan @tailwind porque usamos CDN)
+   ============================================= */
+
+.active {
+  background-color: #1f2937;
+  color: #60a5fa;
+  border-left: 4px solid #3b82f6;
+}
+
+/* Puedes agregar más estilos personalizados aquí abajo */
