@@ -293,35 +293,25 @@ async function renderInvoices(container) {
 
 async function createInvoice() {
   const checked = document.querySelectorAll('.prod-check:checked');
-
+  
   if (checked.length === 0) {
-    alert("Select at least one production");
+    alert("Selecciona al menos una producción completada");
     return;
   }
 
-  // ✅ Get IDs as array (not string)
   const productionIds = Array.from(checked).map(c => Number(c.value));
-
-  // ✅ Calculate total properly
-  let total = 0;
-  checked.forEach(c => {
-    total += Number(c.dataset.price || 0);
-  });
 
   try {
     const res = await apiRequest('/invoices', 'POST', {
       id_editor: currentEditor.id_editor,
-      production_ids: productionIds,   // ✅ FIXED KEY
-      total: total                     // ✅ SEND TOTAL
+      production_ids: productionIds
     });
 
-    alert("Invoice created. Total: $" + total);
-
-    navigateTo('invoices');
-
+    alert(`✅ Factura #${res.id_invoice} creada!\nTotal: $${res.total}`);
+    navigateTo('invoices');   // refresca la vista
   } catch (err) {
-    alert("Error creating invoice");
     console.error(err);
+    alert("Error: " + err.message);
   }
 }
 
