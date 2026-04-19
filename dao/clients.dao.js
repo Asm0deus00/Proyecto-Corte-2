@@ -1,17 +1,23 @@
 const db = require('./db');
 
-const ClientsDAO = {
-  create: async (client) => {
-    const [result] = await db.execute(
-      'INSERT INTO clients (id_editor, name, email, nit, address) VALUES (?, ?, ?, ?, ?)',
-      [client.id_editor, client.name, client.email || null, client.nit || null, client.address || null]
-    );
-    return result.insertId;
-  },
-  findByEditor: async (id_editor) => {
-    const [rows] = await db.execute('SELECT * FROM clients WHERE id_editor = ? ORDER BY name', [id_editor]);
-    return rows;
-  }
-};
+async function getClientsByEditor(id_editor) {
+  const [rows] = await db.query(
+    'SELECT * FROM clients WHERE id_editor = ?',
+    [id_editor]
+  );
+  return rows;
+}
 
-module.exports = ClientsDAO;
+async function createClient(client) {
+  const { id_editor, name, email } = client;
+
+  await db.query(
+    'INSERT INTO clients (id_editor, name, email) VALUES (?, ?, ?)',
+    [id_editor, name, email]
+  );
+}
+
+module.exports = {
+  getClientsByEditor,
+  createClient
+};

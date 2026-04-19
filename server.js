@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const db = require('./dao/db');
 
+
 const app = express();
 
 // ====================== MIDDLEWARE ======================
@@ -24,19 +25,15 @@ db.getConnection()
   });
 
 // ====================== ROUTES ======================
-const editorRoutes = require('./routes/editors.routes');
-const clientRoutes = require('./routes/clients.routes');
-const invoiceRoutes = require('./routes/invoices.routes');
-const productionsRoutes = require('./routes/productions.routes'); // ✅ keep this
+const clientsRoutes = require('./routes/clients.routes');
+const productionsRoutes = require('./routes/productions.routes');
+const invoicesRoutes = require('./routes/invoices.routes');
+const editorsRoutes = require('./routes/editors.routes');
 
-app.use('/api/editors', editorRoutes);
-app.use('/api/clients', clientRoutes);
-app.use('/api/invoices', invoiceRoutes);
-app.use('/api/productions', productionsRoutes); // ✅ NEW CORE ROUTE
-
-// ❌ REMOVE tariffs completely
-// const tariffRoutes = require('./routes/tariffs.routes');
-// app.use('/api/tariffs', tariffRoutes);
+app.use('/api/clients', clientsRoutes);
+app.use('/api/productions', productionsRoutes);
+app.use('/api/invoices', invoicesRoutes);
+app.use('/api/editors', editorsRoutes);
 
 // ====================== ROOT ======================
 app.get('/', (req, res) => {

@@ -1,43 +1,44 @@
 const express = require('express');
 const router = express.Router();
-const EditorsDAO = require('../dao/editors.dao');
+const db = require('../dao/db');
 
-// Registro + Login combinado (ideal para demo)
+// LOGIN (simple demo login)
 router.post('/login', async (req, res) => {
-  const { email, password, full_name = "Editor Demo" } = req.body;
+  const { email, password, full_name } = req.body;
 
   try {
-    // Intentar encontrar usuario
-    let editor = await EditorsDAO.findByEmail(email);
+    // Try to find existing editor
+    const [rows] = await db.query(
+      'SELECT * FROM editors WHERE email = ?',
+      [email]
+    );
 
-    if (!editor) {
-      // Si no existe → lo creamos automáticamente
-      console.log(`🆕 Registrando nuevo usuario: ${email}`);
-      const newId = await EditorsDAO.create({
-        full_name: full_name,
-        email: email,
-        password: password
-      });
-      
-      editor = await EditorsDAO.findByEmail(email);
-      console.log(`✅ Usuario creado con ID: ${newId}`);
+    let editor;
+
+    if (rows.length > 0) {
+      editor = rows[0];
     } else {
-      // Si existe, verificamos contraseña
-      if (editor.password !== password) {
-        return res.status(401).json({ success: false, message: "Contraseña incorrecta" });
-      }
-      console.log(`✅ Login exitoso para: ${email}`);
+      // If not exists → create (demo behavior)
+      const [result] = await db.query(
+        'INSERT INTO editors (email, password, full_name) VALUES (?, ?, ?)',
+        [email, password, full_name]
+      );
+
+      editor = {
+        id_editor: result.insertId,
+        email,
+        full_name
+      };
     }
 
-    res.json({ 
-      success: true, 
-      message: editor ? "Login exitoso" : "Usuario registrado",
-      editor 
+    res.json({
+      success: true,
+      editor
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "Error del servidor" });
+    res.status(500).json({ success: false });
   }
 });
 
