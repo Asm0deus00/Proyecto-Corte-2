@@ -1,12 +1,268 @@
 /* =============================================
-   ESTILOS PERSONALIZADOS DE VIDEOTRACK
-   (NO se necesitan @tailwind porque usamos CDN)
+   VIDEOTRACK — Custom Styles
    ============================================= */
 
-.active {
-  background-color: #1f2937;
-  color: #60a5fa;
-  border-left: 4px solid #3b82f6;
+body { font-family: 'Manrope', sans-serif; }
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* Puedes agregar más estilos personalizados aquí abajo */
+/* ── Sidebar nav links ── */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #8888A0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-link:hover {
+  background: rgba(255,255,255,0.05);
+  color: #e2e8f0;
+}
+.nav-link.active {
+  background: rgba(105, 97, 255, 0.15);
+  color: #6961ff;
+  border-left: none;
+}
+.nav-link .material-symbols-outlined {
+  font-size: 20px;
+}
+
+/* ── Header action button ── */
+.header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: #6961ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.header-btn:hover { background: rgba(105, 97, 255, 0.85); }
+.header-btn:active { transform: scale(0.97); }
+
+/* ── Stat cards ── */
+.stat-card {
+  background: #1A1A22;
+  border: 1px solid #2E2E3E;
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: #6961ff55; }
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8888A0;
+}
+.stat-card .stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+.stat-card .stat-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  background: rgba(105,97,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.stat-card .stat-icon .material-symbols-outlined {
+  font-size: 20px;
+  color: #6961ff;
+}
+
+/* ── Section heading ── */
+.section-heading {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8888A0;
+  margin-bottom: 14px;
+}
+
+/* ── Table ── */
+.vt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.vt-table thead tr {
+  border-bottom: 1px solid #2E2E3E;
+}
+.vt-table thead th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8888A0;
+}
+.vt-table tbody tr {
+  border-bottom: 1px solid #2E2E3E22;
+  transition: background 0.12s;
+}
+.vt-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.vt-table tbody td {
+  padding: 14px 16px;
+  color: #cbd5e1;
+  vertical-align: middle;
+}
+
+/* ── Status badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.badge-pending   { background: rgba(251,191,36,0.12); color: #fbbf24; }
+.badge-progress  { background: rgba(99,179,237,0.12); color: #63b3ed; }
+.badge-completed { background: rgba(52,211,153,0.12); color: #34d399; }
+
+/* ── Inline select (status) ── */
+.status-select {
+  background: #2E2E3E;
+  border: 1px solid #3a3a50;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.status-select:focus { border-color: #6961ff; }
+
+/* ── Icon action button (delete, view) ── */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  color: #8888A0;
+}
+.icon-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: #2E2E3E;
+  color: #e2e8f0;
+}
+.icon-btn.danger:hover {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.3);
+  color: #f87171;
+}
+.icon-btn .material-symbols-outlined { font-size: 18px; }
+
+/* ── Card (clients, invoices) ── */
+.vt-card {
+  background: #1A1A22;
+  border: 1px solid #2E2E3E;
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.vt-card:hover {
+  border-color: #6961ff44;
+  box-shadow: 0 4px 32px rgba(105,97,255,0.06);
+}
+.vt-card-clickable { cursor: pointer; }
+
+/* ── Avatar ── */
+.avatar {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: rgba(105,97,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #6961ff;
+  flex-shrink: 0;
+}
+
+/* ── Invoice row ── */
+.invoice-row {
+  background: #1A1A22;
+  border: 1px solid #2E2E3E;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.15s;
+}
+.invoice-row:hover {
+  background: #22222E;
+  border-color: #6961ff44;
+}
+
+/* ── Checkbox styled ── */
+.prod-check {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  accent-color: #6961ff;
+  cursor: pointer;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 32px;
+  gap: 12px;
+  color: #8888A0;
+  text-align: center;
+}
+.empty-state .material-symbols-outlined {
+  font-size: 48px;
+  opacity: 0.3;
+}
+.empty-state p { font-size: 0.9rem; }
+
+/* ── Profile card ── */
+.profile-card {
+  background: #1A1A22;
+  border: 1px solid #2E2E3E;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px;
+}
