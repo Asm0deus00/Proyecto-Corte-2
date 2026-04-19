@@ -1,46 +1,39 @@
 let currentEditor = null;
 const API_BASE = 'http://localhost:3000/api';
 
+const PROD_TYPES = ['Corporate', 'Music Video', 'Social Media'];
+const DEFAULT_RATE = 100; // $ per minute fallback if no tariff set
+
 // ==================== API ====================
 async function apiRequest(endpoint, method = 'GET', body = null) {
-  const options = {
-    method,
-    headers: { 'Content-Type': 'application/json' }
-  };
-
+  const options = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) options.body = JSON.stringify(body);
-
   const res = await fetch(API_BASE + endpoint, options);
-
   if (!res.ok) {
     const errorText = await res.text();
     console.error("API ERROR:", errorText);
     throw new Error(errorText);
   }
-
   return res.json();
+}
+
+// ==================== TARIFF HELPERS ====================
+function getRate(type) {
+  const tariffs = currentEditor.tariffs || {};
+  return Number(tariffs[type] ?? DEFAULT_RATE);
 }
 
 // ==================== LOGIN ====================
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  const email = document.getElementById('email').value.trim();
+  const email    = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
-
   try {
-    const data = await apiRequest('/editors/login', 'POST', {
-      email,
-      password,
-      full_name: "Demo User"
-    });
-
+    const data = await apiRequest('/editors/login', 'POST', { email, password, full_name: "Demo User" });
     if (data.success) {
       currentEditor = data.editor;
-
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('app-screen').classList.remove('hidden');
-
       renderSidebar();
       navigateTo('dashboard');
     } else {
@@ -54,16 +47,16 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
 // ==================== NAV ====================
 const pages = {
-  dashboard:   { title: "Dashboard",   icon: "dashboard",   render: renderDashboard },
-  productions: { title: "Productions", icon: "movie_edit",  render: renderProductions },
-  clients:     { title: "Clients",     icon: "group",       render: renderClients },
-  invoices:    { title: "Invoices",    icon: "receipt_long",render: renderInvoices },
-  profile:     { title: "Profile",     icon: "person",      render: renderProfile }
+  dashboard:   { title: "Dashboard",   icon: "dashboard",    render: renderDashboard },
+  productions: { title: "Productions", icon: "movie_edit",   render: renderProductions },
+  clients:     { title: "Clients",     icon: "group",        render: renderClients },
+  invoices:    { title: "Invoices",    icon: "receipt_long", render: renderInvoices },
+  tariffs:     { title: "Tariffs",     icon: "sell",         render: renderTariffs },
+  profile:     { title: "Profile",     icon: "person",       render: renderProfile }
 };
 
 function renderSidebar() {
   const nav = document.getElementById("sidebar-nav");
-
   nav.innerHTML = Object.keys(pages).map(key => `
     <a onclick="navigateTo('${key}')" id="nav-${key}" class="nav-link">
       <span class="material-symbols-outlined">${pages[key].icon}</span>
@@ -73,7 +66,6 @@ function renderSidebar() {
 }
 
 function navigateTo(pageKey) {
-  // Update active state
   document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
   const activeLink = document.getElementById(`nav-${pageKey}`);
   if (activeLink) activeLink.classList.add('active');
@@ -81,22 +73,13 @@ function navigateTo(pageKey) {
   const content = document.getElementById('main-content');
   content.innerHTML = '';
 
-  // Header
   let actionBtn = '';
-  if (pageKey === 'clients') {
-    actionBtn = `<button class="header-btn" onclick="showNewClientModal()">
-      <span class="material-symbols-outlined" style="font-size:16px">add</span> New Client
-    </button>`;
-  }
-  if (pageKey === 'productions') {
-    actionBtn = `<button class="header-btn" onclick="showNewProductionModal()">
-      <span class="material-symbols-outlined" style="font-size:16px">add</span> New Production
-    </button>`;
-  }
+  if (pageKey === 'clients')     actionBtn = `<button class="header-btn" onclick="showNewClientModal()"><span class="material-symbols-outlined" style="font-size:16px">add</span> New Client</button>`;
+  if (pageKey === 'productions') actionBtn = `<button class="header-btn" onclick="showNewProductionModal()"><span class="material-symbols-outlined" style="font-size:16px">add</span> New Production</button>`;
 
   document.getElementById('top-header').innerHTML = `
     <div class="flex items-center gap-3">
-      <h2 class="text-base font-700" style="font-weight:700; font-size:1.05rem;">${pages[pageKey].title}</h2>
+      <h2 style="font-weight:700;font-size:1.05rem;">${pages[pageKey].title}</h2>
     </div>
     <div>${actionBtn}</div>
   `;
@@ -107,16 +90,13 @@ function navigateTo(pageKey) {
 // ==================== DASHBOARD ====================
 async function renderDashboard(container) {
   try {
-    const clients = await apiRequest(`/clients?id_editor=${currentEditor.id_editor}`);
+    const clients     = await apiRequest(`/clients?id_editor=${currentEditor.id_editor}`);
     const productions = await apiRequest(`/productions?id_editor=${currentEditor.id_editor}`);
-    const invoices = await apiRequest(`/invoices?id_editor=${currentEditor.id_editor}`);
-
-    const total = invoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
-    const completed = productions.filter(p => p.status === 'completed').length;
+    const invoices    = await apiRequest(`/invoices?id_editor=${currentEditor.id_editor}`);
+    const total       = invoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
 
     container.innerHTML = `
-      <!-- Stat Cards -->
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:32px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;">
         <div class="stat-card">
           <div class="stat-icon"><span class="material-symbols-outlined">group</span></div>
           <div class="stat-label">Clients</div>
@@ -139,16 +119,14 @@ async function renderDashboard(container) {
         </div>
       </div>
 
-      <!-- Recent Invoices -->
       <div class="section-heading">Recent Invoices</div>
-
       ${invoices.length === 0 ? `
         <div class="empty-state">
           <span class="material-symbols-outlined">receipt_long</span>
           <p>No invoices yet. Complete a production and generate one.</p>
         </div>
       ` : `
-        <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
           ${invoices.map(i => `
             <div class="invoice-row" onclick="viewInvoice(${i.id_invoice})">
               <div style="width:36px;height:36px;border-radius:9px;background:rgba(105,97,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -173,16 +151,10 @@ async function renderDashboard(container) {
 // ==================== CLIENTS ====================
 async function renderClients(container) {
   const clients = await apiRequest(`/clients?id_editor=${currentEditor.id_editor}`);
-
   if (!clients.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="material-symbols-outlined">group</span>
-        <p>No clients yet. Add your first client to get started.</p>
-      </div>`;
+    container.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">group</span><p>No clients yet. Add your first client to get started.</p></div>`;
     return;
   }
-
   container.innerHTML = `
     <div class="section-heading">${clients.length} client${clients.length !== 1 ? 's' : ''}</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
@@ -208,7 +180,7 @@ function showNewClientModal() {
     </div>
     <div class="modal-field">
       <label class="modal-label">Name *</label>
-      <input id="m-client-name" class="modal-input" type="text" placeholder="e.g. Acme Studios" autofocus>
+      <input id="m-client-name" class="modal-input" type="text" placeholder="e.g. Acme Studios">
     </div>
     <div class="modal-field">
       <label class="modal-label">Email (optional)</label>
@@ -234,12 +206,7 @@ function submitNewClient() {
 
 async function createClient(name, email) {
   try {
-    await apiRequest('/clients', 'POST', {
-      id_editor: currentEditor.id_editor,
-      name,
-      email: email || null
-    });
-
+    await apiRequest('/clients', 'POST', { id_editor: currentEditor.id_editor, name, email: email || null });
     navigateTo('clients');
   } catch (err) {
     console.error(err);
@@ -251,11 +218,12 @@ async function createClient(name, email) {
 async function showNewProductionModal() {
   try {
     const clients = await apiRequest(`/clients?id_editor=${currentEditor.id_editor}`);
-
     if (!clients.length) {
       openAlert('warning', 'No clients yet', 'You need to add a client before creating a production.');
       return;
     }
+
+    const initRate = getRate(PROD_TYPES[0]);
 
     openModal(`
       <div class="modal-title">
@@ -268,20 +236,22 @@ async function showNewProductionModal() {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="modal-field">
-          <label class="modal-label">Duration (min) *</label>
-          <input id="m-prod-duration" class="modal-input" type="number" min="1" placeholder="e.g. 5">
+          <label class="modal-label">Client *</label>
+          <select id="m-prod-client" class="modal-input" onchange="recalcPrice()">
+            ${clients.map(c => `<option value="${c.id_client}">${c.name}</option>`).join('')}
+          </select>
         </div>
         <div class="modal-field">
           <label class="modal-label">Type *</label>
-          <input id="m-prod-type" class="modal-input" type="text" placeholder="social, corporate…">
+          <select id="m-prod-type" class="modal-input" onchange="recalcPrice()">
+            ${PROD_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+          </select>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="modal-field">
-          <label class="modal-label">Client *</label>
-          <select id="m-prod-client" class="modal-input">
-            ${clients.map(c => `<option value="${c.id_client}">${c.name}</option>`).join('')}
-          </select>
+          <label class="modal-label">Duration (min) *</label>
+          <input id="m-prod-duration" class="modal-input" type="number" min="1" placeholder="e.g. 5" oninput="recalcPrice()">
         </div>
         <div class="modal-field">
           <label class="modal-label">Status</label>
@@ -291,6 +261,13 @@ async function showNewProductionModal() {
             <option value="completed">Completed</option>
           </select>
         </div>
+      </div>
+      <div style="background:#0F0F12;border:1px solid #2E2E3E;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div>
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#8888A0;">Estimated Price</div>
+          <div style="font-size:0.78rem;color:#8888A0;margin-top:2px;" id="m-rate-label">Rate: $${initRate}/min</div>
+        </div>
+        <div id="m-price-value" style="font-size:1.4rem;font-weight:800;color:#34d399;">—</div>
       </div>
       <div class="modal-actions">
         <button class="modal-btn-cancel" onclick="closeModalNow()">Cancel</button>
@@ -307,86 +284,60 @@ async function showNewProductionModal() {
   }
 }
 
+function recalcPrice() {
+  const type     = document.getElementById('m-prod-type')?.value;
+  const duration = parseFloat(document.getElementById('m-prod-duration')?.value) || 0;
+  const rate     = getRate(type);
+  document.getElementById('m-rate-label').textContent  = `Rate: $${rate}/min`;
+  document.getElementById('m-price-value').textContent = duration > 0
+    ? `$${(duration * rate).toLocaleString()}`
+    : '—';
+}
+
 function submitNewProduction() {
   const title    = document.getElementById('m-prod-title').value.trim();
   const duration = document.getElementById('m-prod-duration').value.trim();
-  const type     = document.getElementById('m-prod-type').value.trim();
+  const type     = document.getElementById('m-prod-type').value;
   const client   = document.getElementById('m-prod-client').value;
   const status   = document.getElementById('m-prod-status').value;
-
   if (!title)    { shakeInput('m-prod-title');    return; }
   if (!duration) { shakeInput('m-prod-duration'); return; }
-  if (!type)     { shakeInput('m-prod-type');     return; }
-
   closeModalNow();
   createProduction(title, duration, type, client, status);
 }
 
 async function createProduction(title, duration, video_type, id_client, status) {
-  duration = Number(duration);
+  duration  = Number(duration);
   id_client = Number(id_client);
-
   if (!duration || !id_client) {
-    openAlert('warning', 'Invalid data', 'Please check duration and client ID.');
+    openAlert('warning', 'Invalid data', 'Please check duration and client.');
     return;
   }
-
-  const price = duration * 100;
-
+  const price = duration * getRate(video_type);
   try {
     await apiRequest('/productions', 'POST', {
       id_editor: currentEditor.id_editor,
-      id_client,
-      title,
-      video_type,
-      duration,
-      price,
-      status
+      id_client, title, video_type, duration, price, status
     });
-
     navigateTo('productions');
-
   } catch (err) {
     console.error(err);
     openAlert('error', 'Error', 'Could not save the production.');
   }
 }
 
-function statusBadge(status) {
-  const map = {
-    pending:     ['badge badge-pending',  'Pending'],
-    in_progress: ['badge badge-progress', 'In Progress'],
-    completed:   ['badge badge-completed','Completed'],
-  };
-  const [cls, label] = map[status] || ['badge', status];
-  return `<span class="${cls}">${label}</span>`;
-}
-
 async function renderProductions(container) {
   const productions = await apiRequest(`/productions?id_editor=${currentEditor.id_editor}`);
-
   if (!productions.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="material-symbols-outlined">movie_edit</span>
-        <p>No productions yet. Create your first one.</p>
-      </div>`;
+    container.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">movie_edit</span><p>No productions yet. Create your first one.</p></div>`;
     return;
   }
-
   container.innerHTML = `
     <div class="section-heading">${productions.length} production${productions.length !== 1 ? 's' : ''}</div>
     <div style="background:#1A1A22;border:1px solid #2E2E3E;border-radius:14px;overflow:hidden;">
       <table class="vt-table">
         <thead>
-          <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Duration</th>
-            <th>Price</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
+          <tr><th>Title</th><th>Type</th><th>Duration</th><th>Price</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>
           ${productions.map(p => `
@@ -421,14 +372,10 @@ async function deleteProduction(id) {
       <span class="material-symbols-outlined" style="color:#f87171">delete</span>
       Delete Production
     </div>
-    <p style="color:#8888A0;font-size:0.875rem;margin-bottom:8px;">
-      This action cannot be undone. The production will be permanently removed.
-    </p>
+    <p style="color:#8888A0;font-size:0.875rem;margin-bottom:8px;">This action cannot be undone. The production will be permanently removed.</p>
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeModalNow()">Cancel</button>
-      <button class="modal-btn-danger" onclick="confirmDeleteProduction(${id})">
-        Delete
-      </button>
+      <button class="modal-btn-danger" onclick="confirmDeleteProduction(${id})">Delete</button>
     </div>
   `);
 }
@@ -447,26 +394,23 @@ async function confirmDeleteProduction(id) {
 // ==================== INVOICES ====================
 async function renderInvoices(container) {
   const productions = await apiRequest(`/productions?id_editor=${currentEditor.id_editor}`);
-  const invoices = await apiRequest(`/invoices?id_editor=${currentEditor.id_editor}`);
-
-  const completed = productions.filter(p => p.status === 'completed');
+  const invoices    = await apiRequest(`/invoices?id_editor=${currentEditor.id_editor}`);
+  const completed   = productions.filter(p => p.status === 'completed');
 
   container.innerHTML = `
-    <!-- Create Invoice section -->
     <div class="section-heading">Create Invoice</div>
     <div style="background:#1A1A22;border:1px solid #2E2E3E;border-radius:14px;padding:20px;margin-bottom:28px;">
       ${completed.length === 0 ? `
-        <div style="color:#8888A0;font-size:0.875rem;padding:12px 0;">
-          No completed productions available. Mark productions as completed first.
-        </div>
+        <div style="color:#8888A0;font-size:0.875rem;padding:12px 0;">No completed productions available. Mark productions as completed first.</div>
       ` : `
         <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
           ${completed.map(p => `
-            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 12px;border-radius:9px;transition:background 0.15s;" 
-                   onmouseover="this.style.background='rgba(255,255,255,0.04)'" 
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 12px;border-radius:9px;transition:background 0.15s;"
+                   onmouseover="this.style.background='rgba(255,255,255,0.04)'"
                    onmouseout="this.style.background='transparent'">
               <input type="checkbox" value="${p.id_production}" data-price="${p.price}" class="prod-check">
               <span style="flex:1;font-weight:600;font-size:0.875rem;color:#e2e8f0;">${p.title}</span>
+              <span style="font-size:0.78rem;color:#8888A0;margin-right:8px;">${p.video_type} · ${p.duration}min</span>
               <span style="font-weight:700;color:#34d399;">$${Number(p.price).toLocaleString()}</span>
             </label>
           `).join('')}
@@ -478,13 +422,9 @@ async function renderInvoices(container) {
       `}
     </div>
 
-    <!-- Existing invoices -->
     <div class="section-heading">Invoices</div>
     ${invoices.length === 0 ? `
-      <div class="empty-state">
-        <span class="material-symbols-outlined">receipt_long</span>
-        <p>No invoices created yet.</p>
-      </div>
+      <div class="empty-state"><span class="material-symbols-outlined">receipt_long</span><p>No invoices created yet.</p></div>
     ` : `
       <div style="display:flex;flex-direction:column;gap:10px;">
         ${invoices.map(i => `
@@ -492,9 +432,7 @@ async function renderInvoices(container) {
             <div style="width:36px;height:36px;border-radius:9px;background:rgba(105,97,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <span class="material-symbols-outlined" style="font-size:18px;color:#6961ff">receipt_long</span>
             </div>
-            <div style="flex:1;">
-              <div style="font-weight:700;font-size:0.875rem;color:#e2e8f0;">Invoice #${i.id_invoice}</div>
-            </div>
+            <div style="flex:1;"><div style="font-weight:700;font-size:0.875rem;color:#e2e8f0;">Invoice #${i.id_invoice}</div></div>
             <div style="font-weight:800;font-size:1rem;color:#34d399;">$${Number(i.total).toLocaleString()}</div>
             <span class="material-symbols-outlined" style="font-size:18px;color:#8888A0;">chevron_right</span>
           </div>
@@ -506,20 +444,10 @@ async function renderInvoices(container) {
 
 async function createInvoice() {
   const checked = document.querySelectorAll('.prod-check:checked');
-  
-  if (checked.length === 0) {
-    openAlert('warning', 'No selection', 'Select at least one completed production.');
-    return;
-  }
-
+  if (checked.length === 0) { openAlert('warning', 'No selection', 'Select at least one completed production.'); return; }
   const productionIds = Array.from(checked).map(c => Number(c.value));
-
   try {
-    const res = await apiRequest('/invoices', 'POST', {
-      id_editor: currentEditor.id_editor,
-      production_ids: productionIds
-    });
-
+    const res = await apiRequest('/invoices', 'POST', { id_editor: currentEditor.id_editor, production_ids: productionIds });
     openAlert('success', `Invoice #${res.id_invoice} created`, `Total: $${Number(res.total).toLocaleString()}`, () => navigateTo('invoices'));
   } catch (err) {
     console.error(err);
@@ -529,13 +457,10 @@ async function createInvoice() {
 
 async function viewInvoice(id) {
   const invoices = await apiRequest(`/invoices?id_editor=${currentEditor.id_editor}`);
-  const invoice = invoices.find(i => i.id_invoice === id);
-
+  const invoice  = invoices.find(i => i.id_invoice === id);
   if (!invoice) return;
-
-  const ids = invoice.production_ids || invoice.productions_ids || [];
-  const prodList = Array.isArray(ids) ? ids : [ids];
-
+  const ids      = invoice.production_ids || invoice.productions_ids || [];
+  const prodList = Array.isArray(ids) ? ids : String(ids).split(',');
   openModal(`
     <div class="modal-title">
       <span class="material-symbols-outlined">receipt_long</span>
@@ -551,10 +476,77 @@ async function viewInvoice(id) {
         <span style="color:#34d399;">$${Number(invoice.total).toLocaleString()}</span>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="header-btn" onclick="closeModalNow()">Close</button>
-    </div>
+    <div class="modal-actions"><button class="header-btn" onclick="closeModalNow()">Close</button></div>
   `);
+}
+
+// ==================== TARIFFS ====================
+async function renderTariffs(container) {
+  const tariffs = currentEditor.tariffs || {};
+
+  container.innerHTML = `
+    <div style="max-width:560px;">
+      <p style="color:#8888A0;font-size:0.875rem;margin-bottom:24px;line-height:1.6;">
+        Set your rate per minute for each production type. When creating a new production,
+        the price is calculated automatically as <strong style="color:#e2e8f0;">duration × rate</strong>.
+      </p>
+      <div style="background:#1A1A22;border:1px solid #2E2E3E;border-radius:14px;overflow:hidden;margin-bottom:24px;">
+        <table class="vt-table">
+          <thead>
+            <tr>
+              <th>Production Type</th>
+              <th>Rate per minute (USD)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${PROD_TYPES.map(type => `
+              <tr>
+                <td style="font-weight:600;color:#e2e8f0;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#6961ff;flex-shrink:0;"></div>
+                    ${type}
+                  </div>
+                </td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="color:#8888A0;font-weight:600;">$</span>
+                    <input
+                      id="tariff-${type.replace(/\s/g,'_')}"
+                      class="modal-input"
+                      type="number" min="0" step="1"
+                      value="${tariffs[type] ?? DEFAULT_RATE}"
+                      style="width:110px;padding:7px 12px;">
+                    <span style="color:#8888A0;font-size:0.8rem;">/min</span>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <button class="header-btn" onclick="saveTariffs()">
+        <span class="material-symbols-outlined" style="font-size:16px">save</span>
+        Save Tariffs
+      </button>
+    </div>
+  `;
+}
+
+async function saveTariffs() {
+  const updated = {};
+  for (const type of PROD_TYPES) {
+    const key = type.replace(/\s/g, '_');
+    const val = parseFloat(document.getElementById(`tariff-${key}`)?.value);
+    updated[type] = isNaN(val) || val < 0 ? DEFAULT_RATE : val;
+  }
+  try {
+    await apiRequest(`/editors/${currentEditor.id_editor}/tariffs`, 'PUT', { tariffs: updated });
+    currentEditor.tariffs = updated; // keep in-memory copy in sync
+    openAlert('success', 'Tariffs saved', 'Your rates have been updated successfully.');
+  } catch (err) {
+    console.error(err);
+    openAlert('error', 'Error', 'Could not save tariffs. Make sure the backend endpoint exists.');
+  }
 }
 
 // ==================== PROFILE ====================
@@ -587,9 +579,7 @@ async function updateStatus(id, status) {
   }
 }
 
-function logout() {
-  location.reload();
-}
+function logout() { location.reload(); }
 
 // ==================== MODAL SYSTEM ====================
 function openModal(html) {
@@ -598,7 +588,6 @@ function openModal(html) {
 }
 
 function closeModal(e) {
-  // only close if clicking the overlay itself
   if (e && e.target !== document.getElementById('modal-overlay')) return;
   closeModalNow();
 }
@@ -608,21 +597,14 @@ function closeModalNow() {
   document.getElementById('modal-content').innerHTML = '';
 }
 
-// Close on Escape key
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModalNow();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalNow(); });
 
-// openAlert: type = 'success' | 'warning' | 'error'
 function openAlert(type, title, message, onClose) {
-  const icons    = { success: 'check_circle', warning: 'warning', error: 'error' };
-  const colors   = { success: '#34d399',      warning: '#fbbf24',  error: '#f87171' };
-  const icon  = icons[type]  || 'info';
-  const color = colors[type] || '#6961ff';
-
+  const icons  = { success: 'check_circle', warning: 'warning', error: 'error' };
+  const colors = { success: '#34d399',      warning: '#fbbf24',  error: '#f87171' };
   openModal(`
     <div class="modal-title" style="margin-bottom:12px;">
-      <span class="material-symbols-outlined" style="color:${color}">${icon}</span>
+      <span class="material-symbols-outlined" style="color:${colors[type] || '#6961ff'}">${icons[type] || 'info'}</span>
       ${title}
     </div>
     <p style="color:#8888A0;font-size:0.875rem;margin-bottom:4px;">${message}</p>
@@ -633,26 +615,15 @@ function openAlert(type, title, message, onClose) {
   if (onClose) window.modalOnCloseCallback = onClose;
 }
 
-// Input shake animation for validation
 function shakeInput(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.style.borderColor = '#f87171';
-  el.style.animation = 'shake 0.3s ease';
-  setTimeout(() => {
-    el.style.animation = '';
-    el.style.borderColor = '';
-  }, 400);
+  el.style.animation   = 'shake 0.3s ease';
+  setTimeout(() => { el.style.animation = ''; el.style.borderColor = ''; }, 400);
   el.focus();
 }
 
-// Add shake keyframes dynamically
 const shakeStyle = document.createElement('style');
-shakeStyle.textContent = `
-  @keyframes shake {
-    0%,100% { transform: translateX(0); }
-    25%      { transform: translateX(-6px); }
-    75%      { transform: translateX(6px); }
-  }
-`;
+shakeStyle.textContent = `@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }`;
 document.head.appendChild(shakeStyle);
