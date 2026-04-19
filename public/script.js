@@ -44,10 +44,10 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       renderSidebar();
       navigateTo('dashboard');
     } else {
-      alert("Invalid credentials");
+      openAlert('error', 'Invalid credentials', 'Check your email and password and try again.');
     }
   } catch (err) {
-    alert("Login error");
+    openAlert('error', 'Login error', 'Could not connect to the server.');
     console.error(err);
   }
 });
@@ -201,11 +201,34 @@ async function renderClients(container) {
 }
 
 function showNewClientModal() {
-  const name = prompt("Client name:");
-  const email = prompt("Email (optional):");
+  openModal(`
+    <div class="modal-title">
+      <span class="material-symbols-outlined">group_add</span>
+      New Client
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Name *</label>
+      <input id="m-client-name" class="modal-input" type="text" placeholder="e.g. Acme Studios" autofocus>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Email (optional)</label>
+      <input id="m-client-email" class="modal-input" type="email" placeholder="client@example.com">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeModalNow()">Cancel</button>
+      <button class="header-btn" onclick="submitNewClient()">
+        <span class="material-symbols-outlined" style="font-size:15px">add</span> Add Client
+      </button>
+    </div>
+  `);
+  document.getElementById('m-client-name').focus();
+}
 
-  if (!name) return;
-
+function submitNewClient() {
+  const name  = document.getElementById('m-client-name').value.trim();
+  const email = document.getElementById('m-client-email').value.trim();
+  if (!name) { shakeInput('m-client-name'); return; }
+  closeModalNow();
   createClient(name, email);
 }
 
@@ -220,7 +243,7 @@ async function createClient(name, email) {
     navigateTo('clients');
   } catch (err) {
     console.error(err);
-    alert("Error creating client");
+    openAlert('error', 'Error', 'Could not create client.');
   }
 }
 
@@ -230,26 +253,73 @@ async function showNewProductionModal() {
     const clients = await apiRequest(`/clients?id_editor=${currentEditor.id_editor}`);
 
     if (!clients.length) {
-      alert("You must create a client first.");
+      openAlert('warning', 'No clients yet', 'You need to add a client before creating a production.');
       return;
     }
 
-    const clientList = clients.map(c => `${c.id_client}: ${c.name}`).join('\n');
-
-    const title = prompt("Title:");
-    const duration = prompt("Duration (minutes):");
-    const type = prompt("Type (social, corporate, etc):");
-    const status = prompt("Status (pending, completed, etc):") || "pending";
-    const client = prompt("Select Client ID:\n" + clientList);
-
-    if (!title || !duration || !type || !client) return;
-
-    createProduction(title, duration, type, client, status);
+    openModal(`
+      <div class="modal-title">
+        <span class="material-symbols-outlined">movie_edit</span>
+        New Production
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Title *</label>
+        <input id="m-prod-title" class="modal-input" type="text" placeholder="e.g. Brand Reel 2025">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="modal-field">
+          <label class="modal-label">Duration (min) *</label>
+          <input id="m-prod-duration" class="modal-input" type="number" min="1" placeholder="e.g. 5">
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Type *</label>
+          <input id="m-prod-type" class="modal-input" type="text" placeholder="social, corporate…">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="modal-field">
+          <label class="modal-label">Client *</label>
+          <select id="m-prod-client" class="modal-input">
+            ${clients.map(c => `<option value="${c.id_client}">${c.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Status</label>
+          <select id="m-prod-status" class="modal-input">
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" onclick="closeModalNow()">Cancel</button>
+        <button class="header-btn" onclick="submitNewProduction()">
+          <span class="material-symbols-outlined" style="font-size:15px">add</span> Create
+        </button>
+      </div>
+    `);
+    document.getElementById('m-prod-title').focus();
 
   } catch (err) {
     console.error(err);
-    alert("Error loading clients");
+    openAlert('error', 'Error', 'Could not load clients.');
   }
+}
+
+function submitNewProduction() {
+  const title    = document.getElementById('m-prod-title').value.trim();
+  const duration = document.getElementById('m-prod-duration').value.trim();
+  const type     = document.getElementById('m-prod-type').value.trim();
+  const client   = document.getElementById('m-prod-client').value;
+  const status   = document.getElementById('m-prod-status').value;
+
+  if (!title)    { shakeInput('m-prod-title');    return; }
+  if (!duration) { shakeInput('m-prod-duration'); return; }
+  if (!type)     { shakeInput('m-prod-type');     return; }
+
+  closeModalNow();
+  createProduction(title, duration, type, client, status);
 }
 
 async function createProduction(title, duration, video_type, id_client, status) {
@@ -257,7 +327,7 @@ async function createProduction(title, duration, video_type, id_client, status) 
   id_client = Number(id_client);
 
   if (!duration || !id_client) {
-    alert("Invalid data");
+    openAlert('warning', 'Invalid data', 'Please check duration and client ID.');
     return;
   }
 
@@ -278,7 +348,7 @@ async function createProduction(title, duration, video_type, id_client, status) 
 
   } catch (err) {
     console.error(err);
-    alert("Error saving production");
+    openAlert('error', 'Error', 'Could not save the production.');
   }
 }
 
@@ -346,14 +416,31 @@ async function renderProductions(container) {
 }
 
 async function deleteProduction(id) {
-  if (!confirm("Delete this production?")) return;
+  openModal(`
+    <div class="modal-title">
+      <span class="material-symbols-outlined" style="color:#f87171">delete</span>
+      Delete Production
+    </div>
+    <p style="color:#8888A0;font-size:0.875rem;margin-bottom:8px;">
+      This action cannot be undone. The production will be permanently removed.
+    </p>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeModalNow()">Cancel</button>
+      <button class="modal-btn-danger" onclick="confirmDeleteProduction(${id})">
+        Delete
+      </button>
+    </div>
+  `);
+}
 
+async function confirmDeleteProduction(id) {
+  closeModalNow();
   try {
     await apiRequest(`/productions/${id}`, 'DELETE');
     navigateTo('productions');
   } catch (err) {
     console.error(err);
-    alert("Error deleting production");
+    openAlert('error', 'Error', 'Could not delete the production.');
   }
 }
 
@@ -421,7 +508,7 @@ async function createInvoice() {
   const checked = document.querySelectorAll('.prod-check:checked');
   
   if (checked.length === 0) {
-    alert("Selecciona al menos una producción completada");
+    openAlert('warning', 'No selection', 'Select at least one completed production.');
     return;
   }
 
@@ -433,11 +520,10 @@ async function createInvoice() {
       production_ids: productionIds
     });
 
-    alert(`✅ Factura #${res.id_invoice} creada!\nTotal: $${res.total}`);
-    navigateTo('invoices');
+    openAlert('success', `Invoice #${res.id_invoice} created`, `Total: $${Number(res.total).toLocaleString()}`, () => navigateTo('invoices'));
   } catch (err) {
     console.error(err);
-    alert("Error: " + err.message);
+    openAlert('error', 'Error', err.message);
   }
 }
 
@@ -448,11 +534,26 @@ async function viewInvoice(id) {
   if (!invoice) return;
 
   const ids = invoice.production_ids || invoice.productions_ids || [];
+  const prodList = Array.isArray(ids) ? ids : [ids];
 
-  alert(`
-Invoice #${invoice.id_invoice}
-Productions: ${Array.isArray(ids) ? ids.join(', ') : ids}
-Total: $${invoice.total}
+  openModal(`
+    <div class="modal-title">
+      <span class="material-symbols-outlined">receipt_long</span>
+      Invoice #${invoice.id_invoice}
+    </div>
+    <div style="background:#0F0F12;border-radius:10px;padding:16px 18px;margin-bottom:4px;">
+      <div class="invoice-detail-row">
+        <span style="color:#8888A0;">Productions included</span>
+        <span style="font-weight:600;">${prodList.join(', ')}</span>
+      </div>
+      <div class="invoice-total-row">
+        <span>Total</span>
+        <span style="color:#34d399;">$${Number(invoice.total).toLocaleString()}</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="header-btn" onclick="closeModalNow()">Close</button>
+    </div>
   `);
 }
 
@@ -481,7 +582,7 @@ async function updateStatus(id, status) {
     await apiRequest(`/productions/${id}`, 'PUT', { status });
     navigateTo('productions');
   } catch (err) {
-    alert("Error updating status");
+    openAlert('error', 'Error', 'Could not update status.');
     console.error(err);
   }
 }
@@ -489,3 +590,69 @@ async function updateStatus(id, status) {
 function logout() {
   location.reload();
 }
+
+// ==================== MODAL SYSTEM ====================
+function openModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  // only close if clicking the overlay itself
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  closeModalNow();
+}
+
+function closeModalNow() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.getElementById('modal-content').innerHTML = '';
+}
+
+// Close on Escape key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModalNow();
+});
+
+// openAlert: type = 'success' | 'warning' | 'error'
+function openAlert(type, title, message, onClose) {
+  const icons    = { success: 'check_circle', warning: 'warning', error: 'error' };
+  const colors   = { success: '#34d399',      warning: '#fbbf24',  error: '#f87171' };
+  const icon  = icons[type]  || 'info';
+  const color = colors[type] || '#6961ff';
+
+  openModal(`
+    <div class="modal-title" style="margin-bottom:12px;">
+      <span class="material-symbols-outlined" style="color:${color}">${icon}</span>
+      ${title}
+    </div>
+    <p style="color:#8888A0;font-size:0.875rem;margin-bottom:4px;">${message}</p>
+    <div class="modal-actions">
+      <button class="header-btn" onclick="closeModalNow();${onClose ? 'modalOnCloseCallback()' : ''}">OK</button>
+    </div>
+  `);
+  if (onClose) window.modalOnCloseCallback = onClose;
+}
+
+// Input shake animation for validation
+function shakeInput(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.borderColor = '#f87171';
+  el.style.animation = 'shake 0.3s ease';
+  setTimeout(() => {
+    el.style.animation = '';
+    el.style.borderColor = '';
+  }, 400);
+  el.focus();
+}
+
+// Add shake keyframes dynamically
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%      { transform: translateX(-6px); }
+    75%      { transform: translateX(6px); }
+  }
+`;
+document.head.appendChild(shakeStyle);
