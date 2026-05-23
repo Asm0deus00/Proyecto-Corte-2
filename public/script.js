@@ -1,10 +1,6 @@
 let currentEditor = null;
 const API_BASE = 'http://localhost:3000/api';
 
-// ==================== ANALYTICS (Firebase via backend) ====================
-// Uses raw fetch (not apiRequest) so it is fully detached from the main
-// request flow and cannot be aborted by page navigation.
-// Retries once after 1 s on failure to handle Firebase cold-start latency.
 function logAnalyticsEvent(eventType, payload = {}) {
   if (!currentEditor) {
     console.warn('[Analytics] skipped -- no session yet:', eventType);
@@ -42,7 +38,7 @@ function logAnalyticsEvent(eventType, payload = {}) {
 const PROD_TYPES = ['Corporate', 'Music Video', 'Social Media'];
 const DEFAULT_RATE = 100; // $ per minute fallback if no tariff set
 
-// ==================== API ====================
+
 async function apiRequest(endpoint, method = 'GET', body = null) {
   const options = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) options.body = JSON.stringify(body);
@@ -55,13 +51,13 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
   return res.json();
 }
 
-// ==================== TARIFF HELPERS ====================
+
 function getRate(type) {
   const tariffs = currentEditor.tariffs || {};
   return Number(tariffs[type] ?? DEFAULT_RATE);
 }
 
-// ==================== SESSION ====================
+
 function startSession(editor) {
   currentEditor = editor;
   document.getElementById('login-screen').classList.add('hidden');
@@ -70,7 +66,7 @@ function startSession(editor) {
   navigateTo('dashboard');
 }
 
-// ==================== LOGIN ====================
+
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email    = document.getElementById('email').value.trim();
@@ -89,7 +85,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   }
 });
 
-// ==================== NAV ====================
+
 const pages = {
   dashboard:   { title: "Dashboard",   icon: "dashboard",    render: renderDashboard },
   productions: { title: "Productions", icon: "movie_edit",   render: renderProductions },
@@ -135,7 +131,7 @@ function navigateTo(pageKey) {
   pages[pageKey].render(content);
 }
 
-// ==================== DASHBOARD ====================
+
 async function fetchDashboardData() {
   const [clients, productions, invoices] = await Promise.all([
     apiRequest(`/clients?id_editor=${currentEditor.id_editor}`),
@@ -197,7 +193,7 @@ function buildRecentInvoicesHTML(invoices) {
   return `<div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`;
 }
 
-// ==================== ETL SECTION ====================
+
 function buildETLSectionHTML() {
   return `
     <div class="section-heading">Data Pipeline</div>
@@ -273,7 +269,7 @@ async function renderDashboard(container) {
   }
 }
 
-// ==================== CLIENTS ====================
+
 function buildClientsListHTML(clients) {
   if (!clients.length) {
     return `<div class="empty-state"><span class="material-symbols-outlined">group</span><p>No clients yet. Add your first client to get started.</p></div>`;
@@ -351,7 +347,7 @@ async function createClient(name, email) {
   }
 }
 
-// ==================== PRODUCTIONS ====================
+
 function buildProductionSelectOptions(clients) {
   return clients.map(c => `<option value="${c.id_client}">${c.name}</option>`).join('');
 }
@@ -558,7 +554,7 @@ async function confirmDeleteProduction(id) {
   }
 }
 
-// ==================== INVOICES ====================
+
 function buildCompletedProductionCheckboxes(completed) {
   return completed.map(p => `
     <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 12px;border-radius:9px;transition:background 0.15s;"
@@ -677,7 +673,7 @@ async function viewInvoice(id) {
   openModal(buildInvoiceDetailModalHTML(invoice, prodList));
 }
 
-// ==================== TARIFFS ====================
+
 function buildTariffsTableRows(tariffs) {
   return PROD_TYPES.map(type => `
     <tr>
@@ -752,7 +748,7 @@ async function saveTariffs() {
   }
 }
 
-// ==================== PROFILE ====================
+
 function renderProfile(container) {
   container.innerHTML = `
     <div class="profile-card">
@@ -771,7 +767,7 @@ function renderProfile(container) {
   `;
 }
 
-// ==================== UTILS ====================
+
 async function updateStatus(id, status) {
   try {
     await apiRequest(`/productions/${id}`, 'PUT', { status });
@@ -787,7 +783,7 @@ async function updateStatus(id, status) {
 
 function logout() { location.reload(); }
 
-// ==================== MODAL SYSTEM ====================
+
 function openModal(html) {
   document.getElementById('modal-content').innerHTML = html;
   document.getElementById('modal-overlay').classList.remove('hidden');

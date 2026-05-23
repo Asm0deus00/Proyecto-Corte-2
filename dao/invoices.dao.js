@@ -1,6 +1,6 @@
 const db = require('./db');
 
-// ==================== GET INVOICES ====================
+
 async function getInvoicesByEditor(id_editor) {
   const [rows] = await db.query(
     'SELECT * FROM invoices WHERE id_editor = ? ORDER BY id_invoice DESC',
@@ -9,7 +9,7 @@ async function getInvoicesByEditor(id_editor) {
   return rows;
 }
 
-// ==================== VALIDATE PRODUCTIONS ====================
+
 async function fetchValidatedProductions(id_editor, production_ids) {
   if (!Array.isArray(production_ids) || production_ids.length === 0) {
     throw new Error("Debe seleccionar al menos una produccion completada");
@@ -34,12 +34,12 @@ async function fetchValidatedProductions(id_editor, production_ids) {
   return validRows;
 }
 
-// ==================== CALCULATE INVOICE TOTAL ====================
+
 function calculateInvoiceTotal(validRows) {
   return validRows.reduce((sum, row) => sum + row.price, 0);
 }
 
-// ==================== INSERT INVOICE ====================
+
 async function insertInvoice(id_editor, validRows, total) {
   const productionsString = validRows.map(r => r.id).join(',');
   const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
@@ -58,7 +58,7 @@ async function insertInvoice(id_editor, validRows, total) {
   };
 }
 
-// ==================== CREATE INVOICE (orchestrator) ====================
+
 async function createInvoice(data) {
   const { id_editor, production_ids } = data;
   const validRows = await fetchValidatedProductions(id_editor, production_ids);

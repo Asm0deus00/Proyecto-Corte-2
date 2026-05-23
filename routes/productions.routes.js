@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productionsDAO = require('../dao/productions.dao');
 
-// ==================== GET PRODUCTIONS ====================
+
 router.get('/', async (req, res) => {
   try {
     const data = await productionsDAO.getProductionsByEditor(req.query.id_editor);
@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ==================== CREATE PRODUCTION ====================
+
 router.post('/', async (req, res) => {
   try {
     await productionsDAO.createProduction(req.body);
@@ -24,7 +24,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ==================== DELETE PRODUCTION ====================
+
 router.delete('/:id', async (req, res) => {
   try {
     await productionsDAO.deleteProduction(req.params.id);
@@ -35,7 +35,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// ==================== UPDATE PRODUCTION STATUS ====================
+
 router.put('/:id', async (req, res) => {
   try {
     await productionsDAO.updateProductionStatus(req.params.id, req.body.status);

@@ -1,9 +1,9 @@
-// Post Elements
+
 const postButton = document.getElementById("postBtn");
 const nameInput = document.getElementById("name");
 const dateInput = document.getElementById("birthdate");
 
-//Get Elements
+
 const getAllButton = document.getElementById("getAllBtn");
 const idInput = document.getElementById("id");
 const getOneButton = document.getElementById("getOneBtn");

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const invoicesDAO = require('../dao/invoices.dao');
 
-// ==================== GET INVOICES ====================
+
 router.get('/', async (req, res) => {
   try {
     const data = await invoicesDAO.getInvoicesByEditor(req.query.id_editor);
@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ==================== CREATE INVOICE ====================
+
 router.post('/', async (req, res) => {
   try {
     const result = await invoicesDAO.createInvoice(req.body);

@@ -1,20 +1,10 @@
-// ============================================================
-// ETL DAO — Firebase (Extract) → Transform → MySQL (Load)
-//
-// Extract:   Read all documents from Firestore analytics_events
-// Transform: Normalize fields to match MySQL analytics_log schema
-//            - ISO timestamp → MySQL DATETIME
-//            - Nested editor object → flat columns
-//            - payload object → JSON column
-// Load:      INSERT IGNORE INTO analytics_log (deduplication via firebase_id UNIQUE)
-// ============================================================
 
 const firebaseDb = require('../services/firebase.service');
 const mysqlDb = require('./db');
 
 const COLLECTION = 'analytics_events';
 
-// ==================== CREATE TABLE IF NOT EXISTS ====================
+
 async function ensureAnalyticsTable() {
   await mysqlDb.query(`
     CREATE TABLE IF NOT EXISTS analytics_log (
@@ -30,7 +20,7 @@ async function ensureAnalyticsTable() {
   `);
 }
 
-// ==================== EXTRACT ====================
+
 async function extractFromFirebase() {
   if (!firebaseDb) throw new Error('Firebase not configured. Add env/serviceAccountKey.json');
 
@@ -38,7 +28,7 @@ async function extractFromFirebase() {
   return snapshot.docs.map(doc => ({ firebase_id: doc.id, ...doc.data() }));
 }
 
-// ==================== TRANSFORM ====================
+
 function transformEvent(raw) {
   return {
     firebase_id:     raw.firebase_id,
@@ -52,7 +42,7 @@ function transformEvent(raw) {
   };
 }
 
-// ==================== LOAD ====================
+
 async function loadToMySQL(records) {
   let inserted = 0;
   let skipped = 0;
@@ -76,7 +66,7 @@ async function loadToMySQL(records) {
   return { inserted, skipped };
 }
 
-// ==================== RUN ETL ====================
+
 async function runETL() {
   await ensureAnalyticsTable();
   const rawDocs    = await extractFromFirebase();

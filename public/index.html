@@ -37,9 +37,9 @@
 </head>
 <body class="bg-background-dark text-slate-100 antialiased overflow-hidden">
 
-  <!-- LOGIN SCREEN -->
+  
   <div id="login-screen" class="flex h-screen w-full">
-    <!-- Left Panel -->
+    
     <div class="hidden lg:flex w-1/2 bg-neutral-deep flex-col justify-center items-center p-12 relative overflow-hidden">
       <div class="absolute top-0 left-0 w-full h-full opacity-10">
         <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary rounded-full blur-[120px]"></div>
@@ -54,7 +54,7 @@
       </div>
     </div>
 
-    <!-- Right Panel: Login Form -->
+    
     <div class="flex-1 bg-neutral-dark flex flex-col justify-center p-8 lg:p-16">
       <div class="max-w-md w-full mx-auto">
         <form id="login-form" class="space-y-6">
@@ -72,7 +72,7 @@
     </div>
   </div>
 
-  <!-- MAIN APP -->
+  
   <div id="app-screen" class="hidden flex h-screen">
     <!-- Sidebar -->
     <aside class="w-[240px] flex-shrink-0 bg-nav-bg border-r border-white/5 flex flex-col">
@@ -82,7 +82,7 @@
       </div>
       <nav id="sidebar-nav" class="flex-1 px-4 space-y-1"></nav>
 
-      <!-- Logout at bottom -->
+      
       <div class="p-4 border-t border-white/5">
         <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all text-sm font-medium">
           <span class="material-symbols-outlined text-xl">logout</span>
@@ -91,14 +91,14 @@
       </div>
     </aside>
 
-    <!-- Content Area -->
+
     <div class="flex-1 flex flex-col bg-content-bg overflow-hidden">
       <header id="top-header" class="h-16 bg-nav-bg border-b border-white/5 flex items-center px-8 justify-between"></header>
       <main id="main-content" class="flex-1 overflow-auto p-8"></main>
     </div>
   </div>
 
-  <!-- ── MODAL OVERLAY ── -->
+
   <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
     <div id="modal-box" class="modal-box" onclick="event.stopPropagation()">
       <div id="modal-content"></div>

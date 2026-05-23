@@ -1,24 +1,9 @@
-// ============================================================
-// Analytics DAO — Firebase Firestore
-// Collection: analytics_events
-//
-// Query Driven Design:
-//   Q1: How many invoices are created per day?    → event_type + timestamp
-//   Q2: Which editor bills the most?             → editor.id + payload.total
-//   Q3: Which production type is most completed? → event_type + payload.video_type
-//
-// Design decision: EMBEDDED documents (not referenced)
-//   - Events are append-only (immutable after creation)
-//   - Each query needs the full document, never sub-entities
-//   - Firestore bills per document read; embedded = 1 read per query
-//   - Acceptable data duplication (editor email) for analytics workloads
-// ============================================================
 
 const firebaseDb = require('../services/firebase.service');
 
 const COLLECTION = 'analytics_events';
 
-// ==================== LOG EVENT ====================
+
 async function logEvent(eventType, editorId, editorEmail, payload = {}) {
   if (!firebaseDb) return null; // Firebase not configured
 
@@ -39,7 +24,7 @@ async function logEvent(eventType, editorId, editorEmail, payload = {}) {
   return { id: docRef.id, ...doc };
 }
 
-// ==================== GET ALL EVENTS ====================
+
 async function getAllEvents() {
   if (!firebaseDb) return [];
 
