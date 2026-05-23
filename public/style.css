@@ -379,7 +379,11 @@ body { font-family: 'Manrope', sans-serif; }
   font-size: 0.875rem;
   color: #cbd5e1;
 }
-.invoice-detail-row:last-child { border-bottom: none; }
+
+.invoice-detail-row:last-child {
+  border-bottom: none;
+}
+
 .invoice-total-row {
   display: flex;
   align-items: center;
@@ -392,6 +396,8 @@ body { font-family: 'Manrope', sans-serif; }
   color: #e2e8f0;
 }
 
+/* Missing selector */
+.invoice-modal {
   background: #1A1A22;
   border: 1px solid #2E2E3E;
   border-radius: 16px;

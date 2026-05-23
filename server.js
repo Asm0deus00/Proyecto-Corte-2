@@ -17,11 +17,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ====================== DB CONNECTION TEST ======================
 db.getConnection()
   .then(connection => {
-    console.log("✅ Conexión a MySQL exitosa - Base de datos: videotrack_db");
+    console.log(" Conexión a MySQL exitosa - Base de datos: videotrack_db");
     connection.release();
   })
   .catch(err => {
-    console.error("❌ Error al conectar con MySQL:", err.message);
+    console.error("Error al conectar con MySQL:", err.message);
   });
 
 // ====================== ROUTES ======================
@@ -43,5 +43,5 @@ app.get('/', (req, res) => {
 // ====================== SERVER ======================
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(` Servidor corriendo en http://localhost:${PORT}`);
 });
