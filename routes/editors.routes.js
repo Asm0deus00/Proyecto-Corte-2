@@ -6,20 +6,28 @@ const editorsDAO = require('../dao/editors.dao');
 router.post('/login', async (req, res) => {
   const { email, password, full_name } = req.body;
   try {
-    const editor = await resolveEditor(email, password, full_name);
-    res.json({ success: true, editor });
+    const existing = await editorsDAO.findEditorByEmail(email);
+
+    if (existing) {
+      // Verify password against stored hash
+      const valid = await editorsDAO.verifyPassword(password, existing.password);
+      if (!valid) {
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      }
+      // Return editor without password field
+      const { password: _pw, ...safeEditor } = existing;
+      return res.json({ success: true, editor: safeEditor });
+    }
+
+    // Auto-register: first time user logs in with an unknown email
+    const newEditor = await editorsDAO.createEditor(email, password, full_name || 'New Editor');
+    res.json({ success: true, editor: newEditor });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
-
-// ==================== RESOLVE EDITOR (find or create) ====================
-async function resolveEditor(email, password, full_name) {
-  const existing = await editorsDAO.findEditorByEmail(email);
-  if (existing) return existing;
-  return editorsDAO.createEditor(email, password, full_name);
-}
 
 // ==================== UPDATE TARIFFS ====================
 router.put('/:id/tariffs', async (req, res) => {

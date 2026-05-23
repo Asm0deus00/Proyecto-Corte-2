@@ -3,7 +3,6 @@ const cors = require('cors');
 const path = require('path');
 const db = require('./dao/db');
 
-
 const app = express();
 
 // ====================== MIDDLEWARE ======================
@@ -17,23 +16,27 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ====================== DB CONNECTION TEST ======================
 db.getConnection()
   .then(connection => {
-    console.log(" Conexión a MySQL exitosa - Base de datos: videotrack_db");
+    console.log(' Conexión a MySQL exitosa - Base de datos: videotrack_db');
     connection.release();
   })
   .catch(err => {
-    console.error("Error al conectar con MySQL:", err.message);
+    console.error('Error al conectar con MySQL:', err.message);
   });
 
 // ====================== ROUTES ======================
-const clientsRoutes = require('./routes/clients.routes');
+const clientsRoutes     = require('./routes/clients.routes');
 const productionsRoutes = require('./routes/productions.routes');
-const invoicesRoutes = require('./routes/invoices.routes');
-const editorsRoutes = require('./routes/editors.routes');
+const invoicesRoutes    = require('./routes/invoices.routes');
+const editorsRoutes     = require('./routes/editors.routes');
+const analyticsRoutes   = require('./routes/analytics.routes');
+const etlRoutes         = require('./routes/etl.routes');
 
-app.use('/api/clients', clientsRoutes);
+app.use('/api/clients',    clientsRoutes);
 app.use('/api/productions', productionsRoutes);
-app.use('/api/invoices', invoicesRoutes);
-app.use('/api/editors', editorsRoutes);
+app.use('/api/invoices',   invoicesRoutes);
+app.use('/api/editors',    editorsRoutes);
+app.use('/api/analytics',  analyticsRoutes);
+app.use('/api/etl',        etlRoutes);
 
 // ====================== ROOT ======================
 app.get('/', (req, res) => {

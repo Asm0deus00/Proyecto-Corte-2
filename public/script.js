@@ -1,6 +1,22 @@
 let currentEditor = null;
 const API_BASE = 'http://localhost:3000/api';
 
+// ==================== ANALYTICS (Firebase via backend) ====================
+async function logAnalyticsEvent(eventType, payload = {}) {
+  if (!currentEditor) return;
+  try {
+    await apiRequest('/analytics/event', 'POST', {
+      event_type:   eventType,
+      editor_id:    currentEditor.id_editor,
+      editor_email: currentEditor.email,
+      payload
+    });
+  } catch (err) {
+    // Analytics errors are non-blocking; never interrupt the user flow
+    console.warn('[Analytics] logEvent failed silently:', err.message);
+  }
+}
+
 const PROD_TYPES = ['Corporate', 'Music Video', 'Social Media'];
 const DEFAULT_RATE = 100; // $ per minute fallback if no tariff set
 
@@ -41,6 +57,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const data = await apiRequest('/editors/login', 'POST', { email, password, full_name: "Demo User" });
     if (data.success) {
       startSession(data.editor);
+      logAnalyticsEvent('login_success', { email });
     } else {
       openAlert('error', 'Invalid credentials', 'Check your email and password and try again.');
     }
@@ -158,11 +175,74 @@ function buildRecentInvoicesHTML(invoices) {
   return `<div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`;
 }
 
+// ==================== ETL SECTION ====================
+function buildETLSectionHTML() {
+  return `
+    <div class="section-heading">Data Pipeline</div>
+    <div style="background:#1A1A22;border:1px solid #2E2E3E;border-radius:14px;padding:20px;margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div>
+        <div style="font-weight:700;font-size:0.9rem;color:#e2e8f0;margin-bottom:4px;">Firebase → MySQL ETL</div>
+        <div style="font-size:0.8rem;color:#8888A0;">Extract analytics events from Firestore, transform and load them into MySQL.</div>
+      </div>
+      <button id="etl-btn" class="header-btn" onclick="runETL()" style="white-space:nowrap;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="font-size:16px">sync</span>
+        Run ETL
+      </button>
+    </div>
+    <div id="etl-result" style="display:none;"></div>
+  `;
+}
+
+async function runETL() {
+  const btn = document.getElementById('etl-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;animation:spin 1s linear infinite">refresh</span> Running...';
+  }
+  try {
+    const res = await apiRequest('/etl/run', 'POST');
+    const resultDiv = document.getElementById('etl-result');
+    if (resultDiv) {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `
+        <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+          <span class="material-symbols-outlined" style="color:#34d399;font-size:20px">check_circle</span>
+          <div>
+            <div style="font-weight:700;font-size:0.875rem;color:#34d399;">ETL completed</div>
+            <div style="font-size:0.8rem;color:#8888A0;margin-top:2px;">
+              ${res.total} events extracted from Firebase &bull;
+              ${res.inserted} inserted into MySQL &bull;
+              ${res.skipped} skipped (duplicates)
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  } catch (err) {
+    const resultDiv = document.getElementById('etl-result');
+    if (resultDiv) {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = `
+        <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:10px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+          <span class="material-symbols-outlined" style="color:#f87171;font-size:20px">error</span>
+          <div style="font-size:0.875rem;color:#f87171;">ETL failed: ${err.message}</div>
+        </div>
+      `;
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">sync</span> Run ETL';
+    }
+  }
+}
+
 async function renderDashboard(container) {
   try {
     const { clients, productions, invoices, total } = await fetchDashboardData();
     container.innerHTML =
       buildDashboardStatsHTML(clients, productions, invoices, total) +
+      buildETLSectionHTML() +
       `<div class="section-heading">Recent Invoices</div>` +
       buildRecentInvoicesHTML(invoices);
   } catch (err) {
@@ -530,6 +610,11 @@ async function createInvoice() {
   }
   try {
     const res = await apiRequest('/invoices', 'POST', { id_editor: currentEditor.id_editor, production_ids: productionIds });
+    logAnalyticsEvent('invoice_created', {
+      invoice_number:    res.invoice_number || `INV-${res.id_invoice}`,
+      total:             res.total,
+      productions_count: productionIds.length
+    });
     openAlert('success', `Invoice #${res.id_invoice} created`, `Total: $${Number(res.total).toLocaleString()}`, () => navigateTo('invoices'));
   } catch (err) {
     console.error(err);
@@ -668,6 +753,9 @@ function renderProfile(container) {
 async function updateStatus(id, status) {
   try {
     await apiRequest(`/productions/${id}`, 'PUT', { status });
+    if (status === 'completed') {
+      logAnalyticsEvent('production_completed', { production_id: id });
+    }
     navigateTo('productions');
   } catch (err) {
     openAlert('error', 'Error', 'Could not update status.');
