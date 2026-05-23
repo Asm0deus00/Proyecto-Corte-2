@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const productionsDAO = require('../dao/productions.dao');
-const db = require('../dao/db');
 
 // ==================== GET PRODUCTIONS ====================
 router.get('/', async (req, res) => {
@@ -28,33 +27,23 @@ router.post('/', async (req, res) => {
 // ==================== DELETE PRODUCTION ====================
 router.delete('/:id', async (req, res) => {
   try {
-    await db.query(
-      'DELETE FROM productions WHERE id_production = ?',
-      [req.params.id]
-    );
-
+    await productionsDAO.deleteProduction(req.params.id);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error deleting production" });
   }
 });
+
 // ==================== UPDATE PRODUCTION STATUS ====================
 router.put('/:id', async (req, res) => {
   try {
-    const { status } = req.body;
-
-    await db.query(
-      `UPDATE productions 
-       SET status = ?
-       WHERE id_production = ?`,
-      [status, req.params.id]
-    );
-
+    await productionsDAO.updateProductionStatus(req.params.id, req.body.status);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error updating status" });
   }
 });
+
 module.exports = router;

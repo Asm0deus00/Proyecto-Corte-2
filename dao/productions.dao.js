@@ -27,7 +27,23 @@ async function createProduction(production) {
   );
 }
 
+async function deleteProduction(id_production) {
+  await db.query(
+    'DELETE FROM productions WHERE id_production = ?',
+    [id_production]
+  );
+}
+
+async function updateProductionStatus(id_production, status) {
+  await db.query(
+    'UPDATE productions SET status = ? WHERE id_production = ?',
+    [status, id_production]
+  );
+}
+
 module.exports = {
   getProductionsByEditor,
-  createProduction
+  createProduction,
+  deleteProduction,
+  updateProductionStatus
 };

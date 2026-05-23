@@ -16,8 +16,6 @@ router.get('/', async (req, res) => {
 // ==================== CREATE INVOICE ====================
 router.post('/', async (req, res) => {
   try {
-    console.log("BODY:", req.body); // 🔍 debug
-
     const result = await invoicesDAO.createInvoice(req.body);
 
     res.json({

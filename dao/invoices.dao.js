@@ -9,41 +9,45 @@ async function getInvoicesByEditor(id_editor) {
   return rows;
 }
 
-// ==================== CREATE INVOICE ====================
-async function createInvoice(data) {
-  const { id_editor, production_ids } = data;
-
+// ==================== VALIDATE PRODUCTIONS ====================
+async function fetchValidatedProductions(id_editor, production_ids) {
   if (!Array.isArray(production_ids) || production_ids.length === 0) {
-    throw new Error("Debe seleccionar al menos una producción completada");
+    throw new Error("Debe seleccionar al menos una produccion completada");
   }
 
-  let total = 0;
-  const validIds = [];
-
+  const validRows = [];
   for (const prodId of production_ids) {
     const [rows] = await db.query(
-      `SELECT price FROM productions 
+      `SELECT price FROM productions
        WHERE id_production = ? AND id_editor = ? AND status = 'completed'`,
       [prodId, id_editor]
     );
-
     if (rows.length > 0) {
-      total += Number(rows[0].price);
-      validIds.push(prodId);
+      validRows.push({ id: prodId, price: Number(rows[0].price) });
     }
   }
 
-  if (validIds.length === 0) {
-    throw new Error("Ninguna producción válida para facturar");
+  if (validRows.length === 0) {
+    throw new Error("Ninguna produccion valida para facturar");
   }
 
-  const productionsString = validIds.join(',');
+  return validRows;
+}
+
+// ==================== CALCULATE INVOICE TOTAL ====================
+function calculateInvoiceTotal(validRows) {
+  return validRows.reduce((sum, row) => sum + row.price, 0);
+}
+
+// ==================== INSERT INVOICE ====================
+async function insertInvoice(id_editor, validRows, total) {
+  const productionsString = validRows.map(r => r.id).join(',');
   const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
 
   const [result] = await db.query(
-    `INSERT INTO invoices 
+    `INSERT INTO invoices
      (id_editor, productions_ids, invoice_number, issue_date, subtotal, total, status)
-     VALUES (?, ?, ?, CURDATE(), ?, ?, 'draft')`,   // ← CAMBIO AQUÍ: 'draft'
+     VALUES (?, ?, ?, CURDATE(), ?, ?, 'draft')`,
     [id_editor, productionsString, invoiceNumber, total, total]
   );
 
@@ -54,7 +58,18 @@ async function createInvoice(data) {
   };
 }
 
+// ==================== CREATE INVOICE (orchestrator) ====================
+async function createInvoice(data) {
+  const { id_editor, production_ids } = data;
+  const validRows = await fetchValidatedProductions(id_editor, production_ids);
+  const total = calculateInvoiceTotal(validRows);
+  return insertInvoice(id_editor, validRows, total);
+}
+
 module.exports = {
   getInvoicesByEditor,
+  fetchValidatedProductions,
+  calculateInvoiceTotal,
+  insertInvoice,
   createInvoice
 };
