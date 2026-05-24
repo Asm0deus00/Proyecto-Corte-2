@@ -2,19 +2,41 @@ let currentEditor = null;
 const API_BASE = 'http://localhost:3000/api';
 
 // ==================== ANALYTICS (Firebase via backend) ====================
-async function logAnalyticsEvent(eventType, payload = {}) {
-  if (!currentEditor) return;
-  try {
-    await apiRequest('/analytics/event', 'POST', {
-      event_type:   eventType,
-      editor_id:    currentEditor.id_editor,
-      editor_email: currentEditor.email,
-      payload
-    });
-  } catch (err) {
-    // Analytics errors are non-blocking; never interrupt the user flow
-    console.warn('[Analytics] logEvent failed silently:', err.message);
+// Uses raw fetch (not apiRequest) so it is fully detached from the main
+// request flow and cannot be aborted by page navigation.
+// Retries once after 1 s on failure to handle Firebase cold-start latency.
+function logAnalyticsEvent(eventType, payload = {}) {
+  if (!currentEditor) {
+    console.warn('[Analytics] skipped -- no session yet:', eventType);
+    return;
   }
+
+  const body = JSON.stringify({
+    event_type:   eventType,
+    editor_id:    currentEditor.id_editor,
+    editor_email: currentEditor.email,
+    payload
+  });
+
+  const attempt = (retryOnFail) => {
+    fetch(API_BASE + '/analytics/event', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      console.log('[Analytics] logged:', eventType);
+    })
+    .catch(err => {
+      console.warn('[Analytics] attempt failed:', eventType, err.message);
+      if (retryOnFail) {
+        setTimeout(() => attempt(false), 1000); // single retry after 1s
+      }
+    });
+  };
+
+  attempt(true);
 }
 
 const PROD_TYPES = ['Corporate', 'Music Video', 'Social Media'];
